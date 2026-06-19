@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Inter Study Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#4f46e5;--primary-light:#818cf8;--secondary:#06b6d4;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--dark:#1e293b;--light:#f1f5f9;--white:#fff;--g1:#818cf8;--g2:#2dd4bf}
+body{font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;background:#f8f9fa;color:var(--dark);line-height:1.6}
+.navbar{background:var(--white);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);position:sticky;top:0;z-index:1000}
+.logo{font-size:1.5rem;font-weight:bold;color:var(--primary)}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{text-decoration:none;color:var(--dark);font-weight:500;cursor:pointer;padding:0.5rem 1rem;border-radius:8px;transition:all 0.3s}
+.nav-links a:hover,.nav-links a.active{background:var(--primary);color:#fff}
+.streak-badge{background:#fef3c7;color:var(--warning);padding:0.5rem 1rem;border-radius:20px;font-weight:bold;border:2px solid var(--warning)}
+.section{display:none;padding:2rem;max-width:1200px;margin:0 auto}
+.section.active{display:block}
+.hero{background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;padding:3rem;border-radius:12px;text-align:center;margin-bottom:2rem}
+.hero h1{font-size:1.8rem;margin-bottom:0.5rem;font-style:italic}
+.hero p{opacity:0.9;margin-bottom:1rem}
+.streak-display{display:flex;justify-content:center;gap:3rem;margin-top:1.5rem}
+.streak-box{background:rgba(255,255,255,0.2);padding:1rem 2rem;border-radius:12px;text-align:center}
+.streak-box .number{font-size:2.5rem;font-weight:bold}
+.streak-box .label{font-size:0.9rem;opacity:0.8}
+.card{background:var(--white);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border:1px solid #e2e8f0}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem}
+.card-title{font-size:1.3rem;font-weight:bold;color:var(--dark)}
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1rem}
+.day-box{background:var(--light);border-radius:10px;padding:1rem;text-align:center;border:2px solid transparent;cursor:pointer;transition:all 0.3s}
+.day-box:hover{transform:translateY(-2px);box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)}
+.day-box.active-day{border-color:var(--primary);background:#eef2ff}
+.day-box.completed{background:#dcfce7;border-color:var(--success)}
+.day-box.missed{background:#fee2e2;border-color:var(--danger)}
+.day-name{font-weight:bold;font-size:0.9rem}
+.day-hours{font-size:0.8rem;color:#64748b;margin-top:0.3rem}
+.day-status{font-size:0.75rem;margin-top:0.3rem;font-weight:bold}
+.goals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+.goal-card{background:var(--light);padding:1rem;border-radius:10px;text-align:center}
+.goal-card h4{margin-bottom:0.5rem}
+.goal-input{width:80px;padding:0.3rem;border:1px solid #cbd5e1;border-radius:6px;text-align:center;font-weight:bold;color:var(--primary)}
+.progress-container{margin:0.5rem 0}
+.progress-bar-bg{background:#e2e8f0;height:10px;border-radius:5px;overflow:hidden}
+.progress-bar-fill{height:100%;border-radius:5px;transition:width 0.5s ease}
+.progress-text{font-size:0.85rem;color:#64748b;margin-top:0.3rem;display:flex;justify-content:space-between}
+.groups-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:768px){.groups-wrapper{grid-template-columns:1fr}}
+.group-header{padding:1rem;border-radius:12px 12px 0 0;color:#fff;text-align:center;font-weight:bold;font-size:1.2rem}
+.g1-header{background:var(--g1)}.g2-header{background:var(--g2)}
+.subject-card{background:var(--white);border-radius:10px;padding:1rem;margin-bottom:1rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.3s}
+.subject-card:hover{transform:translateX(5px)}
+.subject-header{display:flex;justify-content:space-between;align-items:center}
+.subject-name{font-weight:bold;font-size:1.1rem}
+.expand-icon{color:#94a3b8;font-size:1.2rem}
+.chapters-list{display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid #e2e8f0}
+.chapters-list.open{display:block}
+.chapter-item{background:var(--light);border-radius:8px;padding:0.8rem;margin-bottom:0.5rem;cursor:pointer;transition:all 0.3s;border-left:4px solid transparent}
+.chapter-item:hover{background:#e2e8f0}
+.chapter-item.completed{background:#dcfce7;border-left-color:var(--success);text-decoration:line-through;opacity:0.7}
+.chapter-item.in-progress{border-left-color:var(--warning)}
+.chapter-header{display:flex;justify-content:space-between;align-items:center}
+.chapter-status{font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:4px;font-weight:bold}
+.status-done{background:var(--success);color:#fff}
+.status-progress{background:var(--warning);color:#fff}
+.status-pending{background:#cbd5e1;color:#475569}
+.units-list{display:none;margin-top:0.5rem;padding-left:1rem}
+.units-list.open{display:block}
+.unit-item{display:flex;align-items:center;gap:0.8rem;padding:0.5rem;background:var(--white);border-radius:6px;margin-bottom:0.3rem;border:1px solid #e2e8f0}
+.unit-checkbox{width:20px;height:20px;cursor:pointer;accent-color:var(--success)}
+.unit-name{font-size:0.9rem;flex:1}
+.unit-hours{font-size:0.75rem;color:#64748b}
+.resources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:1.5rem}
+.resource-subject-card{background:var(--white);border-radius:12px;padding:1.5rem;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);border-top:4px solid var(--primary)}
+.resource-subject-card.g1{border-top-color:var(--g1)}
+.resource-subject-card.g2{border-top-color:var(--g2)}
+.resource-subject-title{font-size:1.2rem;font-weight:bold;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem}
+.upload-area{border:2px dashed #cbd5e1;border-radius:10px;padding:1.5rem;text-align:center;cursor:pointer;transition:all 0.3s;margin-bottom:1rem}
+.upload-area:hover{border-color:var(--primary);background:#eef2ff}
+.upload-area input{display:none}
+.upload-icon{font-size:2rem;color:#94a3b8;margin-bottom:0.5rem}
+.file-list{max-height:150px;overflow-y:auto;margin-bottom:1rem}
+.file-item{display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:var(--light);border-radius:6px;margin-bottom:0.3rem;font-size:0.85rem}
+.file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:0.5rem}
+.file-actions{display:flex;gap:0.3rem}
+.btn-small{padding:0.2rem 0.5rem;border:none;border-radius:4px;cursor:pointer;font-size:0.7rem;font-weight:bold}
+.btn-download{background:var(--primary);color:#fff}
+.btn-delete{background:var(--danger);color:#fff}
+.btn-view{background:var(--secondary);color:#fff}
+.btn-youtube{background:#ff0000;color:#fff}
+.big-progress{background:var(--light);height:30px;border-radius:15px;overflow:hidden;margin:1rem 0}
+.big-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;transition:width 0.5s ease}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;text-align:center}
+.stat-box h3{color:var(--primary);font-size:1.5rem}
+.stat-box p{color:#64748b;font-size:0.9rem}
+.btn{padding:0.6rem 1.2rem;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.3s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn:hover{opacity:0.9;transform:translateY(-1px)}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--dark);color:#fff;padding:1rem 1.5rem;border-radius:10px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);display:none;z-index:3000}
+.toast.show{display:block}
+.study-pair-result{display:none;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:1.5rem;border-radius:10px;border:2px solid var(--warning);margin-top:1rem}
+.pair-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;text-align:center}
+.pair-label{font-size:0.8rem;color:#92400e;font-weight:bold}
+.pair-value{font-size:2rem;font-weight:bold;color:var(--dark)}
+.pair-date{font-size:1.4rem;font-weight:bold;color:var(--danger)}
+.pressure-msg{margin-top:1rem;text-align:center;font-weight:bold;color:var(--danger);font-size:1.1rem}
+.select-box{width:100%;padding:0.6rem;border:1px solid #cbd5e1;border-radius:8px;font-size:0.95rem}
+.input-box{width:100%;padding:0.6rem;border:1px solid #cbd5e1;border-radius:8px;font-size:0.95rem;font-weight:bold;color:var(--primary)}
+.youtube-section{margin-top:1rem;padding-top:1rem;border-top:1px solid #e2e8f0}
+.youtube-section h4{color:var(--danger);font-size:1rem;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem}
+.youtube-input-row{display:flex;gap:0.5rem;margin-bottom:1rem}
+.youtube-input{flex:1;padding:0.5rem;border:1px solid #cbd5e1;border-radius:6px;font-size:0.9rem}
+.youtube-list{max-height:180px;overflow-y:auto}
+.youtube-item{display:flex;justify-content:space-between;align-items:center;padding:0.5rem;background:#fff0f0;border-radius:6px;margin-bottom:0.4rem;border-left:3px solid #ff0000;font-size:0.85rem}
+.youtube-item a{color:var(--primary);text-decoration:none;font-weight:bold}
+.youtube-item a:hover{text-decoration:underline}
+.youtube-faculty{font-size:0.75rem;color:#64748b}
+.recommended-section{background:#f0f9ff;border-radius:8px;padding:1rem;margin-top:1rem}
+.recommended-section h4{color:var(--primary);font-size:0.95rem;margin-bottom:0.5rem}
+.recommended-item{padding:0.4rem 0;border-bottom:1px solid #e2e8f0;font-size:0.85rem}
+.recommended-item:last-child{border-bottom:none}
+.recommended-item a{color:var(--primary);text-decoration:none;font-weight:500}
+.recommended-item a:hover{text-decoration:underline}
+.recommended-faculty{font-size:0.75rem;color:#64748b;display:block;margin-top:0.2rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">CA Inter Tracker</div>
+  <ul class="nav-links">
+    <li><a onclick="showSection('home')" class="active" id="nav-home">Home</a></li>
+    <li><a onclick="showSection('tracker')" id="nav-tracker">Tracker</a></li>
+    <li><a onclick="showSection('resources')" id="nav-resources">Resources</a></li>
+    <li><a onclick="showSection('progress')" id="nav-progress">Progress</a></li>
+  </ul>
+  <div class="streak-badge" id="streakDisplay">Streak: 0</div>
+</nav>
+
+<div id="home" class="section active">
+  <div class="hero">
+    <h1 id="dailyQuote">Loading quote...</h1>
+    <p>Your May 2027 self is watching. Make them proud.</p>
+    <div class="streak-display">
+      <div class="streak-box"><div class="number" id="currentStreak">0</div><div class="label">Current Streak</div></div>
+      <div class="streak-box"><div class="number" id="bestStreak">0</div><div class="label">Best Streak</div></div>
+      <div class="streak-box"><div class="number" id="penaltyCount">0</div><div class="label">Penalties</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Daily Tracker</div>
+      <div>
+        <button class="btn btn-success" onclick="markToday(true)">Mark Done</button>
+        <button class="btn btn-danger" onclick="markToday(false)" style="margin-left:0.5rem">Missed</button>
+      </div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Goal Settings (Hours)</div>
+      <button class="btn btn-primary" onclick="saveGoals()">Save Goals</button>
+    </div>
+    <div class="goals-grid" id="goalsGrid"></div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--warning)">
+    <div class="card-header">
+      <div class="card-title">Study Pair - Current Focus</div>
+      <span style="color:#64748b;font-size:0.85rem">Pick 2 subjects. See deadline. Feel the pressure.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+      <div>
+        <label style="font-size:0.85rem;color:#64748b;font-weight:bold">Subject 1</label>
+        <select id="pairSub1" onchange="updateStudyPair()" class="select-box">
+          <option value="">-- Select --</option>
+          <option value="advacc">Advanced Accounting (180 hrs)</option>
+          <option value="law">Corporate and Other Laws (160 hrs)</option>
+          <option value="tax">Taxation (220 hrs)</option>
+          <option value="cost">Cost and Management Accounting (170 hrs)</option>
+          <option value="audit">Auditing and Ethics (140 hrs)</option>
+          <option value="fm">FM and Strategic Management (180 hrs)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.85rem;color:#64748b;font-weight:bold">Subject 2</label>
+        <select id="pairSub2" onchange="updateStudyPair()" class="select-box">
+          <option value="">-- Select --</option>
+          <option value="advacc">Advanced Accounting (180 hrs)</option>
+          <option value="law">Corporate and Other Laws (160 hrs)</option>
+          <option value="tax">Taxation (220 hrs)</option>
+          <option value="cost">Cost and Management Accounting (170 hrs)</option>
+          <option value="audit">Auditing and Ethics (140 hrs)</option>
+          <option value="fm">FM and Strategic Management (180 hrs)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.85rem;color:#64748b;font-weight:bold">Daily Study Hours</label>
+        <input type="number" id="pairDailyHours" value="6" min="1" max="12" onchange="updateStudyPair()" class="input-box">
+      </div>
+    </div>
+    <div id="pairResult" class="study-pair-result">
+      <div class="pair-grid">
+        <div><div class="pair-label">TOTAL HOURS</div><div class="pair-value" id="pairTotalHours">0</div></div>
+        <div><div class="pair-label">DAYS NEEDED</div><div class="pair-value" id="pairDaysNeeded">0</div></div>
+        <div><div class="pair-label">DUE DATE</div><div class="pair-date" id="pairDueDate">-</div></div>
+        <div><div class="pair-label">DAYS LEFT</div><div class="pair-value" id="pairDaysLeft" style="color:var(--danger)">0</div></div>
+      </div>
+      <div style="margin-top:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.3rem;font-size:0.85rem;font-weight:bold;color:#92400e">
+          <span>Progress</span><span id="pairProgressText">0%</span>
+        </div>
+        <div class="progress-bar-bg" style="height:16px;border-radius:8px">
+          <div id="pairProgressBar" class="progress-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--warning),var(--danger));border-radius:8px"></div>
+        </div>
+      </div>
+      <div id="pairPressureMsg" class="pressure-msg"></div>
+    </div>
+    <div id="pairEmpty" style="text-align:center;padding:2rem;color:#94a3b8">Select 2 subjects above to see your deadline and pressure meter!</div>
+  </div>
+</div>
+
+<div id="tracker" class="section">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Subject Tracker</div>
+      <span style="color:#64748b;font-size:0.9rem">Click subject to expand chapters. Click chapter to expand units. Check units to complete.</span>
+    </div>
+    <div class="groups-wrapper" id="groupsWrapper"></div>
+  </div>
+</div>
+
+<div id="resources" class="section">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Resource Hub</div>
+      <span style="color:#64748b;font-size:0.9rem">Upload notes, PDFs, videos, YouTube links. Best revision lectures pre-loaded!</span>
+    </div>
+    <div class="resources-grid" id="resourcesGrid"></div>
+  </div>
+</div>
+
+<div id="progress" class="section">
+  <div class="card">
+    <div class="card-header"><div class="card-title">Overall Progress</div></div>
+    <div class="big-progress">
+      <div class="big-progress-fill" id="overallProgressBar" style="width:0%">0%</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><h3 id="statSubjects">0/6</h3><p>Subjects</p></div>
+      <div class="stat-box"><h3 id="statChapters">0/93</h3><p>Chapters</p></div>
+      <div class="stat-box"><h3 id="statUnits">0/119</h3><p>Units</p></div>
+      <div class="stat-box"><h3 id="statHours">0/1838</h3><p>Hours</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Subject-wise Progress</div></div>
+    <div id="subjectProgressList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const quotes = [
+  "Discipline is the bridge between goals and accomplishment.",
+  "You do not have to be great to start, but you have to start to be great.",
+  "Success is the sum of small efforts, repeated day in and day out.",
+  "The future belongs to those who believe in the beauty of their dreams.",
+  "It always seems impossible until it is done.",
+  "Do not watch the clock; do what it does. Keep going.",
+  "Your May 2027 self is watching. Make them proud."
+];
+
+const subjectsData = {
+  g1: [
+    {
+      id: "advacc", name: "Advanced Accounting", hours: 180, color: "#818cf8",
+      chapters: [
+        { name: "Introduction to Accounting Standards", units: ["AS Concepts and Framework"], hours: 8 },
+        { name: "Framework for Preparation and Presentation of FS", units: ["Framework Concepts"], hours: 6 },
+        { name: "Applicability of Accounting Standards", units: ["AS Applicability Rules"], hours: 5 },
+        { name: "Presentation and Disclosure-Based AS", units: ["AS 1","AS 3","AS 17","AS 18","AS 20","AS 24","AS 25"], hours: 18 },
+        { name: "Assets-Based AS", units: ["AS 2","AS 10","AS 13","AS 16","AS 19","AS 26","AS 28"], hours: 20 },
+        { name: "Liabilities-Based AS", units: ["AS 15","AS 29"], hours: 12 },
+        { name: "Items Impacting Financial Statements", units: ["AS 4","AS 5","AS 11","AS 22"], hours: 14 },
+        { name: "Revenue-Based AS", units: ["AS 7","AS 9"], hours: 10 },
+        { name: "Other AS", units: ["AS 12","AS 14"], hours: 10 },
+        { name: "Consolidated Financial Statements", units: ["AS 21","AS 23","AS 27"], hours: 14 },
+        { name: "Financial Statements of Companies", units: ["Preparation of FS","Cash Flow Statement"], hours: 10 },
+        { name: "Buyback of Securities", units: ["Buyback Rules and Accounting"], hours: 6 },
+        { name: "Amalgamation of Companies", units: ["Amalgamation Types and Problems"], hours: 12 },
+        { name: "Reconstruction of Companies", units: ["Internal Reconstruction"], hours: 10 },
+        { name: "Branches including Foreign Branches", units: ["Branch Accounting"], hours: 10 }
+      ]
+    },
+    {
+      id: "law", name: "Corporate and Other Laws", hours: 160, color: "#818cf8",
+      chapters: [
+        { name: "Preliminary", units: ["Company Law Basics"], hours: 6 },
+        { name: "Incorporation of Company", units: ["Formation and Registration"], hours: 8 },
+        { name: "Prospectus and Allotment", units: ["Prospectus Rules"], hours: 8 },
+        { name: "Share Capital and Debentures", units: ["Shares and Debentures"], hours: 12 },
+        { name: "Acceptance of Deposits", units: ["Deposit Rules"], hours: 5 },
+        { name: "Registration of Charges", units: ["Charges Registration"], hours: 6 },
+        { name: "Management and Administration", units: ["Board Meetings","AGM"], hours: 10 },
+        { name: "Declaration and Payment of Dividend", units: ["Dividend Rules"], hours: 6 },
+        { name: "Accounts of Companies", units: ["Company Accounts"], hours: 8 },
+        { name: "Audit and Auditors", units: ["Auditor Appointment"], hours: 10 },
+        { name: "Companies Incorporated Outside India", units: ["Foreign Companies"], hours: 5 },
+        { name: "LLP Act 2008", units: ["LLP Formation and Rules"], hours: 8 },
+        { name: "General Clauses Act 1897", units: ["General Clauses"], hours: 8 },
+        { name: "Interpretation of Statutes", units: ["Interpretation Rules"], hours: 6 },
+        { name: "FEMA 1999", units: ["FEMA Rules"], hours: 8 }
+      ]
+    },
+    {
+      id: "tax", name: "Taxation", hours: 220, color: "#818cf8",
+      chapters: [
+        { name: "Basic Concepts (Income Tax)", units: ["Income Tax Basics"], hours: 6 },
+        { name: "Residence and Scope of Total Income", units: ["Residence Rules"], hours: 6 },
+        { name: "Salaries", units: ["Salary Income Computation"], hours: 8 },
+        { name: "House Property", units: ["HP Income Computation"], hours: 6 },
+        { name: "Profits and Gains of Business", units: ["PGBP Computation"], hours: 10 },
+        { name: "Capital Gains", units: ["CG Computation"], hours: 8 },
+        { name: "Other Sources", units: ["Other Sources Income"], hours: 6 },
+        { name: "Clubbing of Income", units: ["Clubbing Provisions"], hours: 6 },
+        { name: "Set-off and Carry Forward", units: ["Loss Set-off Rules"], hours: 6 },
+        { name: "Deductions from GTI", units: ["Chapter VI-A Deductions"], hours: 10 },
+        { name: "Advance Tax, TDS and TCS", units: ["Tax Payment Rules"], hours: 8 },
+        { name: "Filing of Return", units: ["Return Filing"], hours: 5 },
+        { name: "Computation and Optimization", units: ["Tax Planning"], hours: 8 },
+        { name: "GST Introduction", units: ["GST Basics"], hours: 4 },
+        { name: "Supply under GST", units: ["Supply Concepts"], hours: 8 },
+        { name: "Charge of GST", units: ["GST Levy"], hours: 6 },
+        { name: "Place of Supply", units: ["POS Rules"], hours: 6 },
+        { name: "Exemptions from GST", units: ["Exemptions"], hours: 6 },
+        { name: "Time of Supply", units: ["TOS Rules"], hours: 5 },
+        { name: "Value of Supply", units: ["Valuation Rules"], hours: 5 },
+        { name: "Input Tax Credit", units: ["ITC Rules"], hours: 10 },
+        { name: "Registration", units: ["GST Registration"], hours: 4 },
+        { name: "Tax Invoice and E-way Bill", units: ["Invoicing Rules"], hours: 6 }
+      ]
+    }
+  ],
+  g2: [
+    {
+      id: "cost", name: "Cost and Management Accounting", hours: 170, color: "#2dd4bf",
+      chapters: [
+        { name: "Introduction to Cost and Management Accounting", units: ["Cost Concepts"], hours: 6 },
+        { name: "Material Cost", units: ["Material Costing Methods"], hours: 12 },
+        { name: "Employee Cost and Direct Expenses", units: ["Labour Costing"], hours: 10 },
+        { name: "Overheads - Absorption Costing", units: ["Overhead Allocation"], hours: 10 },
+        { name: "Activity-Based Costing", units: ["ABC Concepts"], hours: 8 },
+        { name: "Cost Sheet", units: ["Cost Sheet Preparation"], hours: 8 },
+        { name: "Cost Accounting Systems", units: ["Integral and Non-integral"], hours: 10 },
+        { name: "Unit and Batch Costing", units: ["Unit/Batch Costing"], hours: 8 },
+        { name: "Job Costing and Contract Costing", units: ["Job/Contract Costing"], hours: 10 },
+        { name: "Process and Operation Costing", units: ["Process Costing"], hours: 12 },
+        { name: "Joint Products and By-Products", units: ["Joint/By-Product Costing"], hours: 8 },
+        { name: "Service Costing", units: ["Service Costing Methods"], hours: 8 },
+        { name: "Standard Costing", units: ["Variance Analysis"], hours: 12 },
+        { name: "Marginal Costing", units: ["CVP Analysis"], hours: 12 },
+        { name: "Budget and Budgetary Control", units: ["Budgeting Techniques"], hours: 10 }
+      ]
+    },
+    {
+      id: "audit", name: "Auditing and Ethics", hours: 140, color: "#2dd4bf",
+      chapters: [
+        { name: "Nature, Objective and Scope of Audit", units: ["Audit Basics"], hours: 6 },
+        { name: "Audit Strategy, Planning and Programme", units: ["Audit Planning"], hours: 10 },
+        { name: "Risk Assessment and Internal Control", units: ["Risk and IC"], hours: 12 },
+        { name: "Audit Evidence", units: ["Evidence Collection"], hours: 12 },
+        { name: "Audit of Items of FS", units: ["FS Audit Procedures"], hours: 10 },
+        { name: "Audit Documentation", units: ["Working Papers"], hours: 6 },
+        { name: "Completion and Review", units: ["Audit Completion"], hours: 8 },
+        { name: "Audit Report", units: ["Reporting Standards"], hours: 10 },
+        { name: "Special Features of Audit", units: ["Different Entities"], hours: 8 },
+        { name: "Audit of Banks", units: ["Bank Audit"], hours: 8 },
+        { name: "Ethics and Terms of Engagement", units: ["Ethical Standards"], hours: 10 }
+      ]
+    },
+    {
+      id: "fm", name: "FM and Strategic Management", hours: 180, color: "#2dd4bf",
+      chapters: [
+        { name: "Scope and Objectives of FM", units: ["FM Basics"], hours: 6 },
+        { name: "Types of Financing", units: ["Financing Sources"], hours: 6 },
+        { name: "Financial Analysis (Ratio Analysis)", units: ["Ratio Analysis"], hours: 10 },
+        { name: "Cost of Capital", units: ["WACC Computation"], hours: 10 },
+        { name: "Capital Structure", units: ["Capital Structure Decisions"], hours: 10 },
+        { name: "Leverages", units: ["Operating and Financial Leverage"], hours: 8 },
+        { name: "Investment Decisions", units: ["Capital Budgeting"], hours: 12 },
+        { name: "Dividend Decisions", units: ["Dividend Policy"], hours: 8 },
+        { name: "Working Capital - Intro", units: ["WC Concepts"], hours: 4 },
+        { name: "Cash Management", units: ["Cash Budgeting"], hours: 4 },
+        { name: "Inventory Management", units: ["EOQ and Inventory"], hours: 4 },
+        { name: "Receivables Management", units: ["Credit Policy"], hours: 4 },
+        { name: "Payables and WC Financing", units: ["Payables Management"], hours: 4 },
+        { name: "Introduction to Strategic Management", units: ["SM Basics"], hours: 8 },
+        { name: "External Environment Analysis", units: ["PESTEL, Porter"], hours: 10 },
+        { name: "Internal Environment Analysis", units: ["Value Chain, SWOT"], hours: 10 },
+        { name: "Strategic Choices", units: ["Generic Strategies"], hours: 10 },
+        { name: "Strategy Implementation", units: ["Implementation and Evaluation"], hours: 10 }
+      ]
+    }
+  ]
+};
+
+const subjectHours = { advacc: 180, law: 160, tax: 220, cost: 170, audit: 140, fm: 180 };
+const subjectNames = { advacc: "Advanced Accounting", law: "Corporate and Other Laws", tax: "Taxation", cost: "Cost and Management Accounting", audit: "Auditing and Ethics", fm: "FM and Strategic Management" };
+
+const youtubeLinks = {
+  advacc: [
+    { title: "Adv Acc Full Course - FREE (Better Than Paid)", url: "https://www.youtube.com/watch?v=WL376OVRYu0", faculty: "Conceptual Clarity" },
+    { title: "Adv Acc AS Revision - Quick Revision in 20 min", url: "https://www.youtube.com/playlist?list=PLyTqhsK3CnH1MzIZABQWcDp8zHMnHOGwU", faculty: "AS Revision Series" },
+    { title: "Adv Acc New Syllabus - Complete Playlist", url: "https://www.youtube.com/playlist?list=PLyTqhsK3CnH0IIUr2b7hpLVX43FyC07RN", faculty: "CA Sandeep Arora" }
+  ],
+  law: [
+    { title: "Law Revision - Charts, Flow and Summary", url: "https://www.youtube.com/@ShubhamSinghal", faculty: "CA Shubham Singhal" },
+    { title: "Corporate Law - Crystal Clear Logic", url: "https://www.youtube.com/@CAArjunChhabra", faculty: "CA Arjun Chhabra" },
+    { title: "Law Memory-Based Teaching", url: "https://www.youtube.com/@CAAmitPopli", faculty: "CA Amit Popli" }
+  ],
+  tax: [
+    { title: "Income Tax and GST - Conceptual and Exam Focused", url: "https://www.youtube.com/@UltimateCA", faculty: "CA Vivek Gaba" },
+    { title: "GST Revision - Place of Supply, ITC, Registration", url: "https://www.youtube.com/playlist?list=PL_oXvVx-zrNEXVCp3_xGeGnKgwmN15VTR", faculty: "CA Surender Mittal" },
+    { title: "GST Deep Revision - Marathon Series", url: "https://www.youtube.com/@CAVishalBhattad", faculty: "CA Vishal Bhattad" },
+    { title: "Income Tax Detailed Playlist", url: "https://www.youtube.com/@RajKAgarwal", faculty: "CA Raj K Agarwal" }
+  ],
+  cost: [
+    { title: "Costing Revision - Formula Oriented and Scoring", url: "https://www.youtube.com/@RanjanPeriwal", faculty: "CA Ranjan Periwal (100/100 Scorers)" },
+    { title: "Costing Free Classes - Concept + PYQs", url: "https://www.youtube.com/@KSJTeaching", faculty: "CA Saurav Jindal" },
+    { title: "Costing Fast Track - Last 30 Days", url: "https://www.youtube.com/@PranavPopat", faculty: "CA Pranav Popat" }
+  ],
+  audit: [
+    { title: "Audit Revision - Summary Charts and Practical", url: "https://www.youtube.com/@RishabhJain", faculty: "CA Rishabh Jain" },
+    { title: "Audit Best Revision - Chapter Wise", url: "https://www.youtube.com/playlist?list=PLq-oXqIX1HNzCu0eojen1ag6D0P05-DRP", faculty: "Mrugesh Madlani" },
+    { title: "Audit - High Energy + Flowcharts", url: "https://www.youtube.com/@ShubhamKeswani", faculty: "CA Shubham Keswani" },
+    { title: "Audit Basics + Revision", url: "https://www.youtube.com/@NeerajArora", faculty: "CA Neeraj Arora" }
+  ],
+  fm: [
+    { title: "FM Chapter Wise Revision - Booster", url: "https://www.youtube.com/playlist?list=PLq-oXqIX1HNz-wnF93hlHjR0Oh2p7yPGR", faculty: "Mrugesh Madlani" },
+    { title: "FM + SM - Quick Crisp Scoring", url: "https://www.youtube.com/@RishabhJain", faculty: "CA Rishabh Jain" },
+    { title: "FM Basics + PYQs + Revision", url: "https://www.youtube.com/@NamitArora", faculty: "CA Namit Arora" }
+  ]
+};
+
+let appState = {
+  streak: { current: 0, best: 0, penalties: 0 },
+  dailyLog: {},
+  goals: { advacc: 180, law: 160, tax: 220, cost: 170, audit: 140, fm: 180 },
+  completedUnits: {},
+  completedChapters: {},
+  resources: {},
+  youtubeUrls: {},
+  studyPair: null
+};
+
+function loadState() {
+  try {
+    var saved = localStorage.getItem("caInterTracker");
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      for (var key in parsed) { appState[key] = parsed[key]; }
+    }
+  } catch (e) { console.error("Load error", e); }
+}
+
+function saveState() {
+  try { localStorage.setItem("caInterTracker", JSON.stringify(appState)); }
+  catch (e) { console.error("Save error", e); }
+}
+
+function showSection(id) {
+  var sections = document.querySelectorAll(".section");
+  for (var i = 0; i < sections.length; i++) { sections[i].classList.remove("active"); }
+  document.getElementById(id).classList.add("active");
+  var links = document.querySelectorAll(".nav-links a");
+  for (var i = 0; i < links.length; i++) { links[i].classList.remove("active"); }
+  document.getElementById("nav-" + id).classList.add("active");
+  if (id === "tracker") renderTracker();
+  if (id === "progress") renderProgress();
+  if (id === "resources") renderResources();
+}
+
+function initHome() {
+  var dayIndex = new Date().getDay();
+  document.getElementById("dailyQuote").textContent = '"' + quotes[dayIndex] + '"';
+  document.getElementById("currentStreak").textContent = appState.streak.current;
+  document.getElementById("bestStreak").textContent = appState.streak.best;
+  document.getElementById("penaltyCount").textContent = appState.streak.penalties;
+  document.getElementById("streakDisplay").textContent = "Streak: " + appState.streak.current;
+  renderDaysGrid();
+  renderGoals();
+  loadStudyPair();
+}
+
+function renderDaysGrid() {
+  var grid = document.getElementById("daysGrid");
+  grid.innerHTML = "";
+  var days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  var today = new Date();
+  var dayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(today);
+    d.setDate(today.getDate() - dayIndex + i);
+    var key = d.toISOString().split("T")[0];
+    var log = appState.dailyLog[key];
+    var box = document.createElement("div");
+    var cls = "day-box";
+    if (i === dayIndex) cls += " active-day";
+    if (log && log.completed) cls += " completed";
+    if (log && !log.completed) cls += " missed";
+    box.className = cls;
+    box.innerHTML = '<div class="day-name">' + days[i] + " " + d.getDate() + '</div><div class="day-hours">' + (log ? log.hours : "-") + '</div><div class="day-status">' + (log ? (log.completed ? "Done" : "Missed") : "Pending") + "</div>";
+    grid.appendChild(box);
+  }
+}
+
+function markToday(done) {
+  var today = new Date().toISOString().split("T")[0];
+  if (done) {
+    appState.dailyLog[today] = { completed: true, hours: "6h 40m", revision: true };
+    appState.streak.current += 1;
+    if (appState.streak.current > appState.streak.best) appState.streak.best = appState.streak.current;
+    showToast("Day marked complete! Streak: " + appState.streak.current);
+  } else {
+    appState.dailyLog[today] = { completed: false, hours: "0h", revision: false };
+    appState.streak.current = Math.max(-10, appState.streak.current - 0.5);
+    appState.streak.penalties += 1;
+    showToast("Day missed. Streak: " + appState.streak.current);
+  }
+  saveState();
+  initHome();
+}
+
+function renderGoals() {
+  var grid = document.getElementById("goalsGrid");
+  grid.innerHTML = "";
+  var map = { advacc: "Adv Acc", law: "Law", tax: "Taxation", cost: "Costing", audit: "Audit", fm: "FM and SM" };
+  for (var k in map) {
+    var div = document.createElement("div");
+    div.className = "goal-card";
+    div.innerHTML = "<h4>" + map[k] + '</h4><input type="number" class="goal-input" id="goal-' + k + '" value="' + appState.goals[k] + '"> hrs';
+    grid.appendChild(div);
+  }
+}
+
+function saveGoals() {
+  var keys = ["advacc","law","tax","cost","audit","fm"];
+  for (var i = 0; i < keys.length; i++) {
+    var el = document.getElementById("goal-" + keys[i]);
+    if (el && el.value) appState.goals[keys[i]] = parseInt(el.value);
+  }
+  saveState();
+  showToast("Goals saved!");
+}
+
+function updateStudyPair() {
+  var s1 = document.getElementById("pairSub1").value;
+  var s2 = document.getElementById("pairSub2").value;
+  var daily = parseInt(document.getElementById("pairDailyHours").value) || 6;
+  if (!s1 || !s2 || s1 === s2) {
+    document.getElementById("pairResult").style.display = "none";
+    document.getElementById("pairEmpty").style.display = "block";
+    return;
+  }
+  var total = subjectHours[s1] + subjectHours[s2];
+  var daysNeeded = Math.ceil(total / daily);
+  var today = new Date();
+  var due = new Date(today);
+  due.setDate(today.getDate() + daysNeeded);
+  var daysLeft = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  var allSubs = subjectsData.g1.concat(subjectsData.g2);
+  var totalU = 0, doneU = 0;
+  var pairSubs = [s1, s2];
+  for (var p = 0; p < pairSubs.length; p++) {
+    var sid = pairSubs[p];
+    var sub = null;
+    for (var i = 0; i < allSubs.length; i++) { if (allSubs[i].id === sid) { sub = allSubs[i]; break; } }
+    if (sub) {
+      for (var ci = 0; ci < sub.chapters.length; ci++) {
+        var ch = sub.chapters[ci];
+        var ck = sid + "-ch" + ci;
+        for (var ui = 0; ui < ch.units.length; ui++) {
+          totalU++;
+          if (appState.completedUnits[ck + "-u" + ui]) doneU++;
+        }
+      }
+    }
+  }
+  var progress = totalU > 0 ? Math.round((doneU / totalU) * 100) : 0;
+  document.getElementById("pairResult").style.display = "block";
+  document.getElementById("pairEmpty").style.display = "none";
+  document.getElementById("pairTotalHours").textContent = total + " hrs";
+  document.getElementById("pairDaysNeeded").textContent = daysNeeded;
+  document.getElementById("pairDueDate").textContent = due.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  document.getElementById("pairDaysLeft").textContent = daysLeft;
+  document.getElementById("pairProgressText").textContent = progress + "%";
+  document.getElementById("pairProgressBar").style.width = progress + "%";
+  var msg = document.getElementById("pairPressureMsg");
+  msg.style.color = "var(--danger)";
+  if (progress === 0) msg.textContent = "START NOW! " + subjectNames[s1] + " + " + subjectNames[s2] + " waiting for you!";
+  else if (progress < 30) msg.textContent = "Keep pushing! You are " + progress + "% done. Do not stop!";
+  else if (progress < 70) msg.textContent = "More than halfway! You can do this!";
+  else if (progress < 100) msg.textContent = "Almost there! Final stretch!";
+  else { msg.textContent = "DONE! Move to next pair!"; msg.style.color = "var(--success)"; }
+  appState.studyPair = { sub1: s1, sub2: s2, daily: daily };
+  saveState();
+}
+
+function loadStudyPair() {
+  if (appState.studyPair) {
+    document.getElementById("pairSub1").value = appState.studyPair.sub1;
+    document.getElementById("pairSub2").value = appState.studyPair.sub2;
+    document.getElementById("pairDailyHours").value = appState.studyPair.daily;
+    updateStudyPair();
+  }
+}
+
+function renderTracker() {
+  var wrapper = document.getElementById("groupsWrapper");
+  wrapper.innerHTML = "";
+  var g1Div = document.createElement("div");
+  g1Div.innerHTML = '<div class="group-header g1-header">GROUP 1</div>';
+  for (var i = 0; i < subjectsData.g1.length; i++) { g1Div.appendChild(createSubjectCard(subjectsData.g1[i])); }
+  wrapper.appendChild(g1Div);
+  var g2Div = document.createElement("div");
+  g2Div.innerHTML = '<div class="group-header g2-header">GROUP 2</div>';
+  for (var i = 0; i < subjectsData.g2.length; i++) { g2Div.appendChild(createSubjectCard(subjectsData.g2[i])); }
+  wrapper.appendChild(g2Div);
+}
+
+function createSubjectCard(sub) {
+  var totalU = 0;
+  for (var i = 0; i < sub.chapters.length; i++) { totalU += sub.chapters[i].units.length; }
+  var doneU = 0;
+  for (var ci = 0; ci < sub.chapters.length; ci++) {
+    var ck = sub.id + "-ch" + ci;
+    for (var ui = 0; ui < sub.chapters[ci].units.length; ui++) {
+      if (appState.completedUnits[ck + "-u" + ui]) doneU++;
+    }
+  }
+  var pct = totalU > 0 ? Math.round((doneU / totalU) * 100) : 0;
+  var card = document.createElement("div");
+  card.className = "subject-card";
+  var headerHtml = '<div class="subject-header" onclick="toggleSubject(\'' + sub.id + '\')">';
+  headerHtml += '<div><div class="subject-name">' + sub.name + '</div>';
+  headerHtml += '<div class="progress-container"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:' + pct + '%;background:' + sub.color + '"></div></div>';
+  headerHtml += '<div class="progress-text"><span>' + pct + '%</span><span>' + doneU + '/' + totalU + ' units</span></div></div></div>';
+  headerHtml += '<div class="expand-icon" id="icon-' + sub.id + '">&#9660;</div></div>';
+  var chaptersHtml = '<div class="chapters-list" id="chapters-' + sub.id + '">';
+  for (var ci = 0; ci < sub.chapters.length; ci++) {
+    var ch = sub.chapters[ci];
+    var ck = sub.id + "-ch" + ci;
+    var chDone = appState.completedChapters[ck];
+    var chDoneU = 0;
+    for (var ui = 0; ui < ch.units.length; ui++) { if (appState.completedUnits[ck + "-u" + ui]) chDoneU++; }
+    var status = chDone ? "Done" : (chDoneU > 0 ? "In Progress" : "Pending");
+    var statusClass = status === "In Progress" ? "progress" : status.toLowerCase();
+    chaptersHtml += '<div class="chapter-item' + (chDone ? ' completed' : '') + (chDoneU > 0 && !chDone ? ' in-progress' : '') + '">';
+    chaptersHtml += '<div class="chapter-header" onclick="toggleChapter(\'' + ck + '\',event)">';
+    chaptersHtml += '<span>' + ch.name + '</span>';
+    chaptersHtml += '<span class="chapter-status status-' + statusClass + '">' + status + '</span>';
+    chaptersHtml += '</div>';
+    chaptersHtml += '<div class="units-list" id="units-' + ck + '">';
+    for (var ui = 0; ui < ch.units.length; ui++) {
+      var uk = ck + "-u" + ui;
+      var checked = appState.completedUnits[uk] ? "checked" : "";
+      chaptersHtml += '<div class="unit-item">';
+      chaptersHtml += '<input type="checkbox" class="unit-checkbox" ' + checked + ' onchange="toggleUnit(\'' + uk + '\',\'' + ck + '\',\'' + sub.id + '\')">';
+      chaptersHtml += '<span class="unit-name">' + ch.units[ui] + '</span>';
+      chaptersHtml += '<span class="unit-hours">' + ch.hours + 'h</span>';
+      chaptersHtml += '</div>';
+    }
+    chaptersHtml += '</div></div>';
+  }
+  chaptersHtml += '</div>';
+  card.innerHTML = headerHtml + chaptersHtml;
+  return card;
+}
+
+function toggleSubject(id) {
+  var el = document.getElementById("chapters-" + id);
+  el.classList.toggle("open");
+  document.getElementById("icon-" + id).innerHTML = el.classList.contains("open") ? "&#9650;" : "&#9660;";
+}
+
+function toggleChapter(ck, e) {
+  e.stopPropagation();
+  var el = document.getElementById("units-" + ck);
+  el.classList.toggle("open");
+}
+
+function toggleUnit(uk, ck, sid) {
+  appState.completedUnits[uk] = !appState.completedUnits[uk];
+  var allSubs = subjectsData.g1.concat(subjectsData.g2);
+  var sub = null;
+  for (var i = 0; i < allSubs.length; i++) { if (allSubs[i].id === sid) { sub = allSubs[i]; break; } }
+  var ci = parseInt(ck.split("-ch")[1]);
+  var ch = sub.chapters[ci];
+  var allDone = true;
+  for (var ui = 0; ui < ch.units.length; ui++) {
+    if (!appState.completedUnits[ck + "-u" + ui]) allDone = false;
+  }
+  appState.completedChapters[ck] = allDone;
+  if (allDone) showToast("Chapter completed! Great job!");
+  saveState();
+  renderTracker();
+  updateStudyPair();
+}
+
+function renderResources() {
+  var grid = document.getElementById("resourcesGrid");
+  grid.innerHTML = "";
+  var allSubs = subjectsData.g1.concat(subjectsData.g2);
+  for (var i = 0; i < allSubs.length; i++) {
+    var sub = allSubs[i];
+    var card = document.createElement("div");
+    var isG1 = false;
+    for (var j = 0; j < subjectsData.g1.length; j++) { if (subjectsData.g1[j].id === sub.id) { isG1 = true; break; } }
+    card.className = "resource-subject-card " + (isG1 ? "g1" : "g2");
+    var files = appState.resources[sub.id] || [];
+    var filesHtml = "";
+    for (var f = 0; f < files.length; f++) {
+      var file = files[f];
+      filesHtml += '<div class="file-item"><span class="file-name">' + file.name + '</span>';
+      filesHtml += '<div class="file-actions">';
+      filesHtml += '<button class="btn-small btn-view" onclick="viewResource(\'' + sub.id + '\',' + f + ')">View</button>';
+      filesHtml += '<button class="btn-small btn-download" onclick="downloadResource(\'' + sub.id + '\',' + f + ')">Download</button>';
+      filesHtml += '<button class="btn-small btn-delete" onclick="deleteResource(\'' + sub.id + '\',' + f + ')">Delete</button>';
+      filesHtml += '</div></div>';
+    }
+    var noFiles = '<div style="color:#94a3b8;text-align:center;padding:1rem">No files uploaded yet</div>';
+    var cardHtml = '<div class="resource-subject-title">' + sub.name + '</div>';
+    cardHtml += '<div class="upload-area" onclick="document.getElementById(\'file-' + sub.id + '\').click()">';
+    cardHtml += '<div class="upload-icon">&#128193;</div>';
+    cardHtml += '<div>Click to upload notes, PDFs, videos</div>';
+    cardHtml += '<div style="font-size:0.8rem;color:#94a3b8;margin-top:0.5rem">Max 50MB</div>';
+    cardHtml += '<input type="file" id="file-' + sub.id + '" onchange="handleUpload(\'' + sub.id + '\',this)" multiple>';
+    cardHtml += '</div>';
+    cardHtml += '<div class="file-list" id="fileList-' + sub.id + '">' + (filesHtml || noFiles) + '</div>';
+
+    // YouTube section
+    cardHtml += '<div class="youtube-section">';
+    cardHtml += '<h4>&#9654; YouTube Links</h4>';
+    cardHtml += '<div class="youtube-input-row">';
+    cardHtml += '<input type="text" class="youtube-input" id="ytInput-' + sub.id + '" placeholder="Paste YouTube URL here">';
+    cardHtml += '<button class="btn btn-youtube" onclick="addYoutubeUrl(\'' + sub.id + '\')">Add</button>';
+    cardHtml += '</div>';
+
+    // User added YouTube URLs
+    var userUrls = appState.youtubeUrls[sub.id] || [];
+    if (userUrls.length > 0) {
+      cardHtml += '<div class="youtube-list">';
+      for (var u = 0; u < userUrls.length; u++) {
+        var yu = userUrls[u];
+        cardHtml += '<div class="youtube-item">';
+        cardHtml += '<a href="' + yu.url + '" target="_blank">' + (yu.title || yu.url) + '</a>';
+        cardHtml += '<button class="btn-small btn-delete" onclick="deleteYoutubeUrl(\'' + sub.id + '\',' + u + ')">Delete</button>';
+        cardHtml += '</div>';
+      }
+      cardHtml += '</div>';
+    }
+
+    // Recommended revision lectures
+    var recs = youtubeLinks[sub.id] || [];
+    if (recs.length > 0) {
+      cardHtml += '<div class="recommended-section">';
+      cardHtml += '<h4>&#9733; Best Revision Lectures (Recommended)</h4>';
+      for (var r = 0; r < recs.length; r++) {
+        var rec = recs[r];
+        cardHtml += '<div class="recommended-item">';
+        cardHtml += '<a href="' + rec.url + '" target="_blank">' + rec.title + '</a>';
+        cardHtml += '<span class="recommended-faculty">by ' + rec.faculty + '</span>';
+        cardHtml += '</div>';
+      }
+      cardHtml += '</div>';
+    }
+    cardHtml += '</div>';
+
+    card.innerHTML = cardHtml;
+    grid.appendChild(card);
+  }
+}
+
+function addYoutubeUrl(sid) {
+  var input = document.getElementById("ytInput-" + sid);
+  var url = input.value.trim();
+  if (!url) { showToast("Please enter a YouTube URL"); return; }
+  if (!url.includes("youtube.com") && !url.includes("youtu.be")) { showToast("Please enter a valid YouTube URL"); return; }
+  if (!appState.youtubeUrls[sid]) appState.youtubeUrls[sid] = [];
+  // Extract title from URL or use URL as title
+  var title = url;
+  if (url.includes("v=")) {
+    var vid = url.split("v=")[1];
+    if (vid) title = "YouTube Video (" + vid.substring(0, 11) + ")";
+  }
+  appState.youtubeUrls[sid].push({ url: url, title: title, date: new Date().toISOString() });
+  saveState();
+  renderResources();
+  showToast("YouTube link added!");
+}
+
+function deleteYoutubeUrl(sid, idx) {
+  if (confirm("Delete this YouTube link?")) {
+    appState.youtubeUrls[sid].splice(idx, 1);
+    saveState();
+    renderResources();
+    showToast("YouTube link deleted");
+  }
+}
+
+function handleUpload(sid, input) {
+  var files = Array.from(input.files);
+  if (!appState.resources[sid]) appState.resources[sid] = [];
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    var reader = new FileReader();
+    reader.onload = (function(f) {
+      return function(e) {
+        appState.resources[sid].push({
+          name: f.name, type: f.type, size: f.size,
+          data: e.target.result, date: new Date().toISOString()
+        });
+        saveState();
+        renderResources();
+        showToast("Uploaded: " + f.name);
+      };
+    })(file);
+    reader.readAsDataURL(file);
+  }
+  input.value = "";
+}
+
+function viewResource(sid, idx) {
+  var file = appState.resources[sid][idx];
+  if (file.type.startsWith("image/")) {
+    var w = window.open(); w.document.write('<img src="' + file.data + '" style="max-width:100%">');
+  } else if (file.type === "application/pdf") {
+    var w = window.open(); w.document.write('<iframe src="' + file.data + '" width="100%" height="100%"></iframe>');
+  } else {
+    showToast("Preview not available for this file type");
+  }
+}
+
+function downloadResource(sid, idx) {
+  var file = appState.resources[sid][idx];
+  var a = document.createElement("a");
+  a.href = file.data;
+  a.download = file.name;
+  a.click();
+  showToast("Downloading: " + file.name);
+}
+
+function deleteResource(sid, idx) {
+  if (confirm("Delete this file?")) {
+    appState.resources[sid].splice(idx, 1);
+    saveState();
+    renderResources();
+    showToast("File deleted");
+  }
+}
+
+function renderProgress() {
+  var allSubs = subjectsData.g1.concat(subjectsData.g2);
+  var totalU = 0, doneU = 0, totalCh = 0, doneCh = 0;
+  for (var i = 0; i < allSubs.length; i++) {
+    var sub = allSubs[i];
+    for (var ci = 0; ci < sub.chapters.length; ci++) {
+      var ck = sub.id + "-ch" + ci;
+      totalCh++;
+      if (appState.completedChapters[ck]) doneCh++;
+      for (var ui = 0; ui < sub.chapters[ci].units.length; ui++) {
+        totalU++;
+        if (appState.completedUnits[ck + "-u" + ui]) doneU++;
+      }
+    }
+  }
+  var overall = totalU > 0 ? Math.round((doneU / totalU) * 100) : 0;
+  document.getElementById("overallProgressBar").style.width = overall + "%";
+  document.getElementById("overallProgressBar").textContent = overall + "% Complete";
+  document.getElementById("statSubjects").textContent = "6/6";
+  document.getElementById("statChapters").textContent = doneCh + "/" + totalCh;
+  document.getElementById("statUnits").textContent = doneU + "/" + totalU;
+  document.getElementById("statHours").textContent = "0/1838";
+  var list = document.getElementById("subjectProgressList");
+  list.innerHTML = "";
+  for (var i = 0; i < allSubs.length; i++) {
+    var sub = allSubs[i];
+    var sTotal = 0, sDone = 0;
+    for (var ci = 0; ci < sub.chapters.length; ci++) {
+      var ck = sub.id + "-ch" + ci;
+      for (var ui = 0; ui < sub.chapters[ci].units.length; ui++) {
+        sTotal++;
+        if (appState.completedUnits[ck + "-u" + ui]) sDone++;
+      }
+    }
+    var pct = sTotal > 0 ? Math.round((sDone / sTotal) * 100) : 0;
+    var div = document.createElement("div");
+    div.style.marginBottom = "1rem";
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem"><strong>' + sub.name + '</strong><span>' + pct + '%</span></div>';
+    div.innerHTML += '<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:' + pct + '%;background:' + sub.color + '"></div></div>';
+    list.appendChild(div);
+  }
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function() { t.classList.remove("show"); }, 3000);
+}
+
+loadState();
+initHome();
+</script>
+</body>
+</html>
